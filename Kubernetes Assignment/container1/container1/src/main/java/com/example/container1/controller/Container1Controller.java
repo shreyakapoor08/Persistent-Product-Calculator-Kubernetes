@@ -7,6 +7,9 @@ import com.example.container1.exception.InvalidInputException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -19,7 +22,8 @@ import java.util.Map;
 public class Container1Controller {
 
     private static final String CONTAINER2_URL = "http://localhost:8080/calculatesum";
-    private static final String STORAGE_PATH = "/Users/lib-user/Downloads/volume/";
+//    private static final String STORAGE_PATH = "/Users/lib-user/Downloads/volume/";
+private static final String STORAGE_PATH = "E:\\DALHOUSIE COURSEWORK\\Cloud Computing\\Kubernetes Assignment\\container1\\container1\\";
 
     private final RestTemplate restTemplate;
 
@@ -55,6 +59,9 @@ public class Container1Controller {
         }
     }
 
+
+
+
     private void validateInput(String fileName) throws InvalidInputException {
         if (fileName == null) {
             throw new InvalidInputException("Invalid JSON input.");
@@ -63,31 +70,70 @@ public class Container1Controller {
 
     private ResponseEntity< Map<String,Object> > sendRequestToContainer2(String file, String product) {
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-            Map<String, String> requestBody = new HashMap<>();
-            requestBody.put("file", file);
-            requestBody.put("product", product);
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("file", file);
+        requestBody.put("product", product);
 
-            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
         ParameterizedTypeReference<Map<String, Object>> responseType =
                 new ParameterizedTypeReference<Map<String, Object>>() {};
 
         // Make the POST request
-        try{
+        try {
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(
                     CONTAINER2_URL,
                     HttpMethod.POST,
                     requestEntity,
                     responseType);
             return responseEntity;
-        } catch (Exception e){
-            System.out.println(e.getMessage());
-            return  null;
+        } catch (HttpClientErrorException e) {
+            // Handle HTTP client errors (4xx)
+            HttpStatusCode statusCode = e.getStatusCode();
+            if (statusCode == HttpStatus.NOT_FOUND) {
+                // Handle file not found scenario
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("file", file);
+                errorResponse.put("error", "File not found.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            } else if (statusCode == HttpStatus.BAD_REQUEST) {
+                // Handle invalid CSV format scenario
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("file", file);
+                errorResponse.put("error", "Input file not in CSV format.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            } else {
+                // Handle other client errors
+                // You can add more conditions based on the specific HTTP status codes you expect
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("file", null);
+                errorResponse.put("error", "Client Error: " + statusCode);
+                return ResponseEntity.status(statusCode).body(errorResponse);
+            }
+        } catch (HttpServerErrorException e) {
+            // Handle HTTP server errors (5xx)
+            HttpStatusCode statusCode = e.getStatusCode();
+            // Handle other error scenarios
+            // You can add more conditions based on the specific HTTP status codes you expect
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("file", null);
+            errorResponse.put("error", "Server Error: " + statusCode);
+            return ResponseEntity.status(statusCode).body(errorResponse);
+        } catch (RestClientException e) {
+            // Handle other RestClientException (connection issues, etc.)
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("file", null);
+            errorResponse.put("error", "RestClientException: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
 
+
     }
+
+
+
 
     private Map<String, String> createResponse(String fileName, String message) {
         Map<String, String> result = new HashMap<>();
