@@ -1,0 +1,11 @@
+services:
+  shreya-container1:
+    image: shreyakapoorcanada98/assignment1-container1-image
+    container_name: shreya-container1
+    ports:
+      - '6000:6000'
+    volumes:
+      - .:/home/volume
+  shreya-container2-test:
+    image: shreyakapoorcanada98/assignment1-container2-image
+    container_name: shreya-container2-test
