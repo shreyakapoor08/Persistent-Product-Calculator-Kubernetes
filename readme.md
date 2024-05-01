@@ -92,6 +92,13 @@ Container 2 listens on a defined port and endpoint, interacts with Container 1, 
 - Accesses the GKE persistent volume.
 - Calculates product totals from the given file.
 - Returns appropriate JSON responses based on success or error conditions.
+- Folders container1 and container2 contains source code of the server.
+- It also contains the yaml for kubernestes cluster deployment, service, 
+persistent volume.
+- CloudBuild.yaml file is present in respective container1 and container2 
+folder.
+- Terraform folder container terraform script to create Google Kubernetes 
+Cluster.
 
 ## Additional Requirements
 1. Create separate repositories for each container in GCP Cloud Source Repository and implement CI/CD pipelines using GCP Cloud Build.
