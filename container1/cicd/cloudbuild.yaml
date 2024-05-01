@@ -1,0 +1,40 @@
+steps:
+- id: build-image
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/springboot-containers/container-1:$SHORT_SHA', '.']
+  
+- id: push-image
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/springboot-containers/container-1:$SHORT_SHA']
+
+- id: create-volume
+  name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - 'apply'
+  - '-f'
+  - 'cicd/kubernetes/persistentVolume.yaml'
+
+- id: update-deployment-file
+  name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      sed -i "s|SHORT_SHA|$SHORT_SHA|g" cicd/kubernetes/deployment-service-1.yaml
+      cat cicd/kubernetes/deployment-service-1.yaml
+
+
+# Deploy the Kubernetes resources to GKE
+- id: apply-resources
+  name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - 'apply' 
+  - '-f'
+  - 'cicd/kubernetes/deployment-service-1.yaml'
+  allowFailure: true
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+  - 'CLOUDSDK_COMPUTE_REGION=us-central1-c'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=kubernetes-cluster'

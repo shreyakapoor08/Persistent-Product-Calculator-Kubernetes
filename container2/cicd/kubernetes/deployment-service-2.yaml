@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-deployment-2
+  labels:
+    app: container-deployment-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: container-deployment-2
+  template:
+    metadata:
+      labels:
+        app: container-deployment-2
+    spec:
+      containers:
+      - name: container-deployment-2
+        image: "us-central1-docker.pkg.dev/shreya-kubernetes/springboot-containers/container-2:SHORT_SHA"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: persistent-volume 
+          mountPath: /shreya_PV_dir 
+      volumes:
+      - name: persistent-volume
+        persistentVolumeClaim:
+          claimName: persistent-volume-claim 
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-service-2
+spec:
+  selector:
+    app: container-deployment-2
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
